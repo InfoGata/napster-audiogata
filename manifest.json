@@ -1,6 +1,7 @@
 {
-  "name": "napster-audiogata",
-  "api": "1.0.0",
+  "name": "Plugin for Napster",
+  "version": "1.0.0",
   "script": "dist/index.js",
-  "options": "dist/options.html"
+  "options": "dist/options.html",
+  "description": "Play music from napster. Requires napster login."
 }
