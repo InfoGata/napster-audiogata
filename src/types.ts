@@ -107,7 +107,16 @@ export interface NapsterAuthResponse {
   access_token: string;
   expires_in: number;
   refresh_token: string;
-  username: string;
+}
+
+export interface PluginInfo {
+  id?: string;
+  name: string;
+  script: string;
+  version?: string;
+  description?: string;
+  optionsHtml?: string;
+  optionsSameOrigin?: boolean;
 }
 
 export interface Application {
@@ -120,6 +129,7 @@ export interface Application {
   getTrackUrl?: (song: ISong) => Promise<void>;
   getPlaylistTracks?: (playlist: IPlaylist) => Promise<void>;
   postUiMessage: (msg: any) => Promise<void>;
+  onDeepLinkMessage: (message: any) => Promise<void>;
   onUiMessage?: (message: any) => void;
   endTrack: () => Promise<void>;
   setTrackTime: (currentTime: number) => Promise<void>;
@@ -137,4 +147,8 @@ export interface Application {
   onNowPlayingTracksRemoved: (track: ISong[]) => Promise<void>;
   onNowPlayingTracksChanged: (track: ISong[]) => Promise<void>;
   onNowPlayingTracksSet: (track: ISong[]) => Promise<void>;
+  getCorsProxy: () => Promise<string>;
+  installPlugins: (plugins: PluginInfo[]) => void;
+  getPlugins: () => Promise<PluginInfo[]>;
+  getPluginId: () => Promise<string>;
 }

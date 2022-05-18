@@ -4,83 +4,97 @@ import { useState, useEffect } from "preact/hooks";
 import { API_KEY } from "./shared";
 import { NapsterAuthResponse } from "./types";
 
-const tokenUrl = "https://api.napster.com/oauth/token";
+const tokenUrl = "https://api.napster.com/oauth/access_token";
+const napsterAuthUrl = "https://api.napster.com/oauth/authorize";
+const redirectPath = "/login_popup.html";
 // Secret is here on purpose
 // Otherwise would need to run a server.
 const apiSecret = "YjUxYzBmODAtNjY1ZS00MjcxLThiYmYtNjVmNjNlODdhZDk4";
 
 const App: FunctionalComponent = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [pluginId, setPluginId] = useState("");
+  const [redirectUri, setRedirectUri] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       switch (event.data.type) {
         case "login":
-          const auth: NapsterAuthResponse = event.data.auth;
-          setUsername(auth.username);
           setIsSignedIn(true);
+          break;
+        case "origin":
+          setRedirectUri(event.data.origin + redirectPath);
+          setPluginId(event.data.pluginId);
           break;
       }
     };
     window.addEventListener("message", onMessage);
-    console.log("whats going on");
     parent.postMessage({ type: "check-login" }, "*");
     () => window.removeEventListener("message", onMessage);
   }, []);
 
-  const onPasswordLogin = async () => {
-    const params = new URLSearchParams();
-    params.append("username", username);
-    params.append("password", password);
-    params.append("grant_type", "password");
-    const result = await axios.post<NapsterAuthResponse>(tokenUrl, params, {
-      auth: {
-        username: API_KEY,
-        password: apiSecret,
-      },
-    });
-    parent.postMessage({ type: "login", auth: result.data }, "*");
-    setIsSignedIn(true);
+  const onImplicitLogin = async () => {
+    const state = { pluginId: pluginId };
+    const authUrl = new URL(napsterAuthUrl);
+    authUrl.searchParams.append("client_id", API_KEY);
+    authUrl.searchParams.append("redirect_uri", redirectUri);
+    authUrl.searchParams.append("response_type", "code");
+    authUrl.searchParams.append("state", JSON.stringify(state));
+    const newWindow = window.open(authUrl);
+
+    const onMessage = async (url: string) => {
+      const returnUrl = new URL(url);
+      newWindow.close();
+      const error = returnUrl.searchParams.get("error");
+      if (error !== null) {
+        setMessage(`Error: ${error}`);
+        return;
+      }
+      const params = new URLSearchParams();
+      params.append("client_id", API_KEY);
+      params.append("client_secret", apiSecret);
+      params.append("response_type", "code");
+      params.append("grant_type", "authorization_code");
+      params.append("redirect_uri", redirectUri);
+      params.append("code", returnUrl.searchParams.get("code"));
+      const result = await axios.post(tokenUrl, params, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+      setIsSignedIn(true);
+      parent.postMessage({ type: "login", auth: result.data }, "*");
+    };
+
+    window.onmessage = async (event: MessageEvent) => {
+      if (event.source === newWindow) {
+        await onMessage(event.data.url);
+      } else {
+        if (event.data.type === "deeplink") {
+          await onMessage(event.data.url);
+        }
+      }
+    };
   };
 
   const onLogout = () => {
+    parent.postMessage("logout", "*");
     setIsSignedIn(false);
-  };
-
-  const onChangeUserName = (event: JSX.TargetedEvent<HTMLInputElement>) => {
-    setUsername(event.currentTarget.value);
-  };
-
-  const onChangePassword = (event: JSX.TargetedEvent<HTMLInputElement>) => {
-    setPassword(event.currentTarget.value);
   };
 
   return (
     <>
       {isSignedIn ? (
         <div>
-          <p>Logged in as {username}</p>
           <button onClick={onLogout}>Logout</button>
         </div>
       ) : (
         <div>
-          <input
-            type="text"
-            value={username}
-            onInput={onChangeUserName}
-            placeholder="Username"
-          />
-          <input
-            type="password"
-            value={password}
-            onInput={onChangePassword}
-            placeholder="Password"
-          />
-          <button onClick={onPasswordLogin}>Password Login</button>
+          <button onClick={onImplicitLogin}>Login</button>
         </div>
       )}
+      <pre>{message}</pre>
     </>
   );
 };

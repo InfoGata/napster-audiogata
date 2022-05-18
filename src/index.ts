@@ -230,20 +230,43 @@ const loadPlayer = () => {
   application.seek = napsterPlayer.seek.bind(napsterPlayer);
 };
 
-application.onUiMessage = (message: any) => {
+const sendOrigin = async () => {
+  const host = document.location.host;
+  const hostArray = host.split(".");
+  hostArray.shift();
+  const domain = hostArray.join(".");
+  const origin = `${document.location.protocol}//${domain}`;
+  const pluginId = await application.getPluginId();
+  application.postUiMessage({
+    type: "origin",
+    origin: origin,
+    pluginId: pluginId,
+  });
+};
+
+application.onUiMessage = async (message: any) => {
   switch (message.type) {
     case "login":
       auth = message.auth;
       localStorage.setItem("auth", JSON.stringify(auth));
       loadPlayer();
       break;
+    case "logout":
+      localStorage.removeItem("auth");
+      break;
     case "check-login":
       const authStr = localStorage.getItem("auth");
       if (authStr) {
         application.postUiMessage({ type: "login", auth: JSON.parse(authStr) });
       }
+      await sendOrigin();
       break;
   }
+};
+
+application.onDeepLinkMessage = async (message: string) => {
+  console.log(message);
+  application.postUiMessage({ type: "deeplink", url: message });
 };
 
 const init = async () => {
