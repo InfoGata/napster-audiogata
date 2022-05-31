@@ -163,21 +163,21 @@ class NapsterPlayer {
     Napster.player.play(id);
   }
 
-  public pause() {
+  public async pause() {
     try {
       Napster.player.pause();
     } catch {}
   }
 
-  public resume() {
+  public async resume() {
     Napster.player.resume();
   }
 
-  public seek(time: number) {
+  public async seek(time: number) {
     Napster.player.seek(time);
   }
 
-  public setVolume(volume: number) {
+  public async setVolume(volume: number) {
     if (Napster && Napster.player) {
       Napster.player.setVolume(volume);
     }
@@ -214,7 +214,7 @@ class NapsterPlayer {
     }
   }
 
-  public async getPlaylistTracks(_playlist: IPlaylist) {
+  public async getPlaylistTracks(_playlist: IPlaylist): Promise<ISong[]> {
     return [];
   }
 }
@@ -222,6 +222,8 @@ class NapsterPlayer {
 const napsterPlayer = new NapsterPlayer();
 
 const loadPlayer = () => {
+  if (!auth) return;
+
   napsterPlayer.initalizePlayer(auth.access_token, auth.refresh_token);
   application.play = napsterPlayer.play.bind(napsterPlayer);
   application.pause = napsterPlayer.pause.bind(napsterPlayer);

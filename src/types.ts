@@ -51,19 +51,6 @@ export interface IPlayerComponent {
   setPlaybackRate?: (rate: number) => void;
 }
 
-export interface ISearchApi {
-  name: string;
-  searchAll: (query: string) => Promise<{
-    tracks?: ISong[];
-    albums?: IAlbum[];
-    artists?: IArtist[];
-    playlists?: IPlaylist[];
-  }>;
-  getAlbumTracks: (album: IAlbum) => Promise<ISong[]>;
-  getPlaylistTracks: (playlist: IPlaylist) => Promise<ISong[]>;
-  getArtistAlbums: (artist: IArtist) => Promise<IAlbum[]>;
-}
-
 export interface INapsterResult {
   search: INapsterSearch;
 }
@@ -127,7 +114,7 @@ export interface Application {
     playlists?: IPlaylist[];
   }>;
   getTrackUrl?: (song: ISong) => Promise<void>;
-  getPlaylistTracks?: (playlist: IPlaylist) => Promise<void>;
+  getPlaylistTracks?: (playlist: IPlaylist) => Promise<ISong[]>;
   postUiMessage: (msg: any) => Promise<void>;
   onDeepLinkMessage: (message: any) => Promise<void>;
   onUiMessage?: (message: any) => void;

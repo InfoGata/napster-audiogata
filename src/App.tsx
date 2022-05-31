@@ -45,7 +45,9 @@ const App: FunctionalComponent = () => {
 
     const onMessage = async (url: string) => {
       const returnUrl = new URL(url);
-      newWindow.close();
+      if (newWindow) {
+        newWindow.close();
+      }
       const error = returnUrl.searchParams.get("error");
       if (error !== null) {
         setMessage(`Error: ${error}`);
@@ -57,7 +59,7 @@ const App: FunctionalComponent = () => {
       params.append("response_type", "code");
       params.append("grant_type", "authorization_code");
       params.append("redirect_uri", redirectUri);
-      params.append("code", returnUrl.searchParams.get("code"));
+      params.append("code", returnUrl.searchParams.get("code") || "");
       const result = await axios.post(tokenUrl, params, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
