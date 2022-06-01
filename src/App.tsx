@@ -1,15 +1,10 @@
 import axios from "axios";
 import { FunctionalComponent, JSX } from "preact";
 import { useState, useEffect } from "preact/hooks";
-import { API_KEY } from "./shared";
-import { NapsterAuthResponse } from "./types";
+import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
 
-const tokenUrl = "https://api.napster.com/oauth/access_token";
 const napsterAuthUrl = "https://api.napster.com/oauth/authorize";
 const redirectPath = "/login_popup.html";
-// Secret is here on purpose
-// Otherwise would need to run a server.
-const apiSecret = "YjUxYzBmODAtNjY1ZS00MjcxLThiYmYtNjVmNjNlODdhZDk4";
 
 const App: FunctionalComponent = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -55,12 +50,12 @@ const App: FunctionalComponent = () => {
       }
       const params = new URLSearchParams();
       params.append("client_id", API_KEY);
-      params.append("client_secret", apiSecret);
+      params.append("client_secret", API_SECRET);
       params.append("response_type", "code");
       params.append("grant_type", "authorization_code");
       params.append("redirect_uri", redirectUri);
       params.append("code", returnUrl.searchParams.get("code") || "");
-      const result = await axios.post(tokenUrl, params, {
+      const result = await axios.post(TOKEN_URL, params, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },

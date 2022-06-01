@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_KEY } from "./shared";
+import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
 import {
   INapsterResult,
   INapsterAlbum,
@@ -10,55 +10,77 @@ import {
   INapsterTrack,
   ISong,
   INapsterData,
-  IPlaylist,
   Application,
   NapsterAuthResponse,
+  SearchAllResult,
+  SearchRequest,
+  SearchTrackResult,
+  SearchAlbumResult,
+  SearchArtistResult,
+  PlaylistTrackRequest,
+  UserPlaylistRequest,
+  SearchPlaylistResult,
+  NapsterPlaylistResponse,
 } from "./types";
+
+const http = axios.create();
 
 declare var Napster: any;
 declare var application: Application;
 let auth: NapsterAuthResponse | undefined;
 
+const refreshToken = async () => {
+  if (!auth) {
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.append("client_id", API_KEY);
+  params.append("client_secret", API_SECRET);
+  params.append("grant_type", "refresh_token");
+  params.append("refresh_token", auth.refresh_token);
+  params.append("response_type", "code");
+  const result = await axios.post(TOKEN_URL, params, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
+  if (result.data.access_token && result.data.refresh_token) {
+    localStorage.setItem("auth", JSON.stringify(result.data));
+    return result.data.access_token as string;
+  }
+};
+
+http.interceptors.request.use(
+  (config) => {
+    const authString = localStorage.getItem("auth");
+    if (authString) {
+      auth = JSON.parse(authString);
+      config.headers["Authorization"] = "Bearer " + auth?.access_token;
+    }
+    return config;
+  },
+  (error) => {
+    Promise.reject(error);
+  }
+);
+
+http.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const accessToken = await refreshToken();
+      axios.defaults.headers.common["Authorization"] = "Bearer " + accessToken;
+      return http(originalRequest);
+    }
+  }
+);
+
 const path = "https://api.napster.com/v2.2";
-
-async function searchTracks(query: string) {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
-    query
-  )}&type=track`;
-  try {
-    const results = await axios.get<INapsterResult>(url);
-    const tracks = results.data.search.data.tracks;
-    return trackResultToSong(tracks);
-  } catch {
-    return [];
-  }
-}
-
-async function searchArtists(query: string) {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
-    query
-  )}&type=artist`;
-  try {
-    const results = await axios.get<INapsterResult>(url);
-    const artists = results.data.search.data.artists;
-    return aristResultToArtist(artists);
-  } catch {
-    return [];
-  }
-}
-
-async function searchAlbums(query: string) {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
-    query
-  )}&type=album`;
-  try {
-    const results = await axios.get<INapsterResult>(url);
-    const albums = results.data.search.data.albums;
-    return albumResultToAlbum(albums);
-  } catch {
-    return [];
-  }
-}
 
 function albumResultToAlbum(results: INapsterAlbum[]): IAlbum[] {
   return results.map(
@@ -182,41 +204,6 @@ class NapsterPlayer {
       Napster.player.setVolume(volume);
     }
   }
-
-  public async searchAll(query: string) {
-    const [tracks, albums, artists] = await Promise.all([
-      searchTracks(query),
-      searchAlbums(query),
-      searchArtists(query),
-    ]);
-    return { tracks, albums, artists };
-  }
-
-  public async getAlbumTracks(album: IAlbum) {
-    const url = `${path}/albums/${album.apiId}/tracks?apikey=${API_KEY}`;
-    try {
-      const results = await axios.get<INapsterData>(url);
-      const tracks = results.data.tracks;
-      return trackResultToSong(tracks);
-    } catch {
-      return [];
-    }
-  }
-
-  public async getArtistAlbums(artist: IArtist) {
-    const url = `${path}/artists/${artist.apiId}/albums/top?apikey=${API_KEY}`;
-    try {
-      const results = await axios.get<INapsterData>(url);
-      const albums = results.data.albums;
-      return albumResultToAlbum(albums);
-    } catch {
-      return [];
-    }
-  }
-
-  public async getPlaylistTracks(_playlist: IPlaylist): Promise<ISong[]> {
-    return [];
-  }
 }
 
 const napsterPlayer = new NapsterPlayer();
@@ -230,6 +217,7 @@ const loadPlayer = () => {
   application.resume = napsterPlayer.resume.bind(napsterPlayer);
   application.setVolume = napsterPlayer.setVolume.bind(napsterPlayer);
   application.seek = napsterPlayer.seek.bind(napsterPlayer);
+  application.getUserPlaylists = getUserPlaylists;
 };
 
 const sendOrigin = async () => {
@@ -267,9 +255,124 @@ application.onUiMessage = async (message: any) => {
 };
 
 application.onDeepLinkMessage = async (message: string) => {
-  console.log(message);
   application.postUiMessage({ type: "deeplink", url: message });
 };
+
+async function getArtistAlbums(artist: IArtist) {
+  const url = `${path}/artists/${artist.apiId}/albums/top?apikey=${API_KEY}`;
+  try {
+    const results = await axios.get<INapsterData>(url);
+    const albums = results.data.albums;
+    return albumResultToAlbum(albums);
+  } catch {
+    return [];
+  }
+}
+
+async function getAlbumTracks(album: IAlbum) {
+  const url = `${path}/albums/${album.apiId}/tracks?apikey=${API_KEY}`;
+  try {
+    const results = await axios.get<INapsterData>(url);
+    const tracks = results.data.tracks;
+    return trackResultToSong(tracks);
+  } catch {
+    return [];
+  }
+}
+
+async function getUserPlaylists(
+  _request: UserPlaylistRequest
+): Promise<SearchPlaylistResult> {
+  if (!auth) {
+    return { items: [] };
+  }
+  const url = `${path}/me/library/playlists`;
+  const result = await http.get<NapsterPlaylistResponse>(url);
+
+  const response: SearchPlaylistResult = {
+    items: result.data.playlists.map((p) => ({
+      name: p.name,
+      images: p.images,
+      apiId: p.id,
+      songs: [],
+    })),
+  };
+  return response;
+}
+
+async function getPlaylistTracks(
+  request: PlaylistTrackRequest
+): Promise<SearchTrackResult> {
+  const limit = 200;
+  const url = `${path}/playlists/${request.playlist.apiId}/tracks?apikey=${API_KEY}&limit=${limit}`;
+  const result = await http.get<INapsterData>(url);
+
+  const response: SearchTrackResult = {
+    items: trackResultToSong(result.data.tracks),
+  };
+  return response;
+}
+
+async function searchArtists(
+  request: SearchRequest
+): Promise<SearchArtistResult> {
+  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+    request.query
+  )}&type=artist`;
+  try {
+    const results = await axios.get<INapsterResult>(url);
+    const artists = results.data.search.data.artists;
+    const response: SearchArtistResult = {
+      items: aristResultToArtist(artists),
+    };
+    return response;
+  } catch {
+    return { items: [] };
+  }
+}
+
+async function searchAlbums(
+  request: SearchRequest
+): Promise<SearchAlbumResult> {
+  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+    request.query
+  )}&type=album`;
+  try {
+    const results = await axios.get<INapsterResult>(url);
+    const albums = results.data.search.data.albums;
+    const response: SearchAlbumResult = {
+      items: albumResultToAlbum(albums),
+    };
+    return response;
+  } catch {
+    return { items: [] };
+  }
+}
+
+async function searchTracks(
+  request: SearchRequest
+): Promise<SearchTrackResult> {
+  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+    request.query
+  )}&type=track`;
+  try {
+    const results = await axios.get<INapsterResult>(url);
+    const tracks = results.data.search.data.tracks;
+    const response: SearchTrackResult = { items: trackResultToSong(tracks) };
+    return response;
+  } catch {
+    return { items: [] };
+  }
+}
+
+async function searchAll(request: SearchRequest): Promise<SearchAllResult> {
+  const [tracks, albums, artists] = await Promise.all([
+    searchTracks(request),
+    searchAlbums(request),
+    searchArtists(request),
+  ]);
+  return { tracks, albums, artists };
+}
 
 const init = async () => {
   await napsterPlayer.loadScripts();
@@ -278,12 +381,10 @@ const init = async () => {
     auth = JSON.parse(authString);
     loadPlayer();
   }
-  application.searchAll = napsterPlayer.searchAll.bind(napsterPlayer);
-  application.getAlbumTracks = napsterPlayer.getAlbumTracks.bind(napsterPlayer);
-  application.getArtistAlbums =
-    napsterPlayer.getArtistAlbums.bind(napsterPlayer);
-  application.getPlaylistTracks =
-    napsterPlayer.getPlaylistTracks.bind(napsterPlayer);
+  application.searchAll = searchAll;
+  application.getAlbumTracks = getAlbumTracks;
+  application.getArtistAlbums = getArtistAlbums;
+  application.getPlaylistTracks = getPlaylistTracks;
 };
 
 init();
