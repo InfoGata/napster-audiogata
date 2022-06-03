@@ -1,25 +1,13 @@
 import axios from "axios";
 import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
+import "audiogata-plugin-typings";
 import {
   INapsterResult,
   INapsterAlbum,
-  IAlbum,
   INapsterArtist,
-  IArtist,
-  IImage,
   INapsterTrack,
-  ISong,
   INapsterData,
-  Application,
   NapsterAuthResponse,
-  SearchAllResult,
-  SearchRequest,
-  SearchTrackResult,
-  SearchAlbumResult,
-  SearchArtistResult,
-  PlaylistTrackRequest,
-  UserPlaylistRequest,
-  SearchPlaylistResult,
   NapsterPlaylistResponse,
 } from "./types";
 

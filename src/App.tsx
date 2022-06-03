@@ -1,5 +1,5 @@
 import axios from "axios";
-import { FunctionalComponent, JSX } from "preact";
+import { FunctionalComponent } from "preact";
 import { useState, useEffect } from "preact/hooks";
 import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
 
