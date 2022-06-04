@@ -70,31 +70,27 @@ http.interceptors.response.use(
 
 const path = "https://api.napster.com/v2.2";
 
-function albumResultToAlbum(results: INapsterAlbum[]): IAlbum[] {
-  return results.map(
-    (r) =>
-      ({
-        apiId: r.id.toString(),
-        artistId: r.contributingArtists.primaryArtist,
-        artistName: r.artistName,
-        from: "napster",
-        name: r.name,
-      } as IAlbum)
-  );
+function albumResultToAlbum(results: INapsterAlbum[]): Album[] {
+  return results.map((r) => ({
+    apiId: r.id.toString(),
+    artistId: r.contributingArtists.primaryArtist,
+    artistName: r.artistName,
+    from: "napster",
+    name: r.name,
+    images: [],
+  }));
 }
 
-function aristResultToArtist(results: INapsterArtist[]): IArtist[] {
-  return results.map(
-    (r) =>
-      ({
-        apiId: r.id.toString(),
-        from: "napster",
-        name: r.name,
-      } as IArtist)
-  );
+function aristResultToArtist(results: INapsterArtist[]): Artist[] {
+  return results.map((r) => ({
+    apiId: r.id.toString(),
+    from: "napster",
+    name: r.name,
+    images: [],
+  }));
 }
 
-function getImages(albumId: string): IImage[] {
+function getImages(albumId: string): ImageInfo[] {
   const sizes = [70, 170, 200, 300, 500];
   return sizes.map((s) => ({
     height: s,
@@ -103,20 +99,18 @@ function getImages(albumId: string): IImage[] {
   }));
 }
 
-function trackResultToSong(results: INapsterTrack[]): ISong[] {
-  return results.map(
-    (r) =>
-      ({
-        albumId: r.albumId,
-        apiId: r.id,
-        artistId: r.artistId,
-        artistName: r.artistName,
-        duration: r.playbackSeconds,
-        from: "napster",
-        images: getImages(r.albumId),
-        name: r.name,
-      } as ISong)
-  );
+function trackResultToSong(results: INapsterTrack[]): Track[] {
+  return results.map((r) => ({
+    albumId: r.albumId,
+    apiId: r.id,
+    artistId: r.artistId,
+    artistName: r.artistName,
+    duration: r.playbackSeconds,
+    from: "napster",
+    images: getImages(r.albumId),
+    name: r.name,
+    source: "",
+  }));
 }
 
 class NapsterPlayer {
@@ -168,7 +162,7 @@ class NapsterPlayer {
     }
   }
 
-  public async play(song: ISong) {
+  public async play(song: Track) {
     const id = song.apiId || "";
     Napster.player.play(id);
   }
@@ -246,7 +240,7 @@ application.onDeepLinkMessage = async (message: string) => {
   application.postUiMessage({ type: "deeplink", url: message });
 };
 
-async function getArtistAlbums(artist: IArtist) {
+async function getArtistAlbums(artist: Artist) {
   const url = `${path}/artists/${artist.apiId}/albums/top?apikey=${API_KEY}`;
   try {
     const results = await axios.get<INapsterData>(url);
@@ -257,7 +251,7 @@ async function getArtistAlbums(artist: IArtist) {
   }
 }
 
-async function getAlbumTracks(album: IAlbum) {
+async function getAlbumTracks(album: Album) {
   const url = `${path}/albums/${album.apiId}/tracks?apikey=${API_KEY}`;
   try {
     const results = await axios.get<INapsterData>(url);
