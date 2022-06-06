@@ -194,11 +194,11 @@ const loadPlayer = () => {
   if (!auth) return;
 
   napsterPlayer.initalizePlayer(auth.access_token, auth.refresh_token);
-  application.play = napsterPlayer.play.bind(napsterPlayer);
-  application.pause = napsterPlayer.pause.bind(napsterPlayer);
-  application.resume = napsterPlayer.resume.bind(napsterPlayer);
-  application.setVolume = napsterPlayer.setVolume.bind(napsterPlayer);
-  application.seek = napsterPlayer.seek.bind(napsterPlayer);
+  application.onPlay = napsterPlayer.play.bind(napsterPlayer);
+  application.onPause = napsterPlayer.pause.bind(napsterPlayer);
+  application.onResume = napsterPlayer.resume.bind(napsterPlayer);
+  application.onSetVolume = napsterPlayer.setVolume.bind(napsterPlayer);
+  application.onSeek = napsterPlayer.seek.bind(napsterPlayer);
   application.getUserPlaylists = getUserPlaylists;
 };
 
@@ -276,7 +276,6 @@ async function getUserPlaylists(
       name: p.name,
       images: p.images,
       apiId: p.id,
-      songs: [],
     })),
   };
   return response;
