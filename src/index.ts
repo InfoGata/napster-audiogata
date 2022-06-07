@@ -195,7 +195,7 @@ const loadPlayer = () => {
   application.onResume = napsterPlayer.resume.bind(napsterPlayer);
   application.onSetVolume = napsterPlayer.setVolume.bind(napsterPlayer);
   application.onSeek = napsterPlayer.seek.bind(napsterPlayer);
-  application.getUserPlaylists = getUserPlaylists;
+  application.onGetUserPlaylists = getUserPlaylists;
 };
 
 const sendOrigin = async () => {
@@ -358,10 +358,10 @@ const init = async () => {
     auth = JSON.parse(authString);
     loadPlayer();
   }
-  application.searchAll = searchAll;
-  application.getAlbumTracks = getAlbumTracks;
-  application.getArtistAlbums = getArtistAlbums;
-  application.getPlaylistTracks = getPlaylistTracks;
+  application.onSearchAll = searchAll;
+  application.onGetAlbumTracks = getAlbumTracks;
+  application.onGetArtistAlbums = getArtistAlbums;
+  application.onGetPlaylistTracks = getPlaylistTracks;
 };
 
 init();
