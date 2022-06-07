@@ -75,7 +75,6 @@ function albumResultToAlbum(results: INapsterAlbum[]): Album[] {
     apiId: r.id.toString(),
     artistId: r.contributingArtists.primaryArtist,
     artistName: r.artistName,
-    from: "napster",
     name: r.name,
     images: [],
   }));
@@ -84,7 +83,6 @@ function albumResultToAlbum(results: INapsterAlbum[]): Album[] {
 function aristResultToArtist(results: INapsterArtist[]): Artist[] {
   return results.map((r) => ({
     apiId: r.id.toString(),
-    from: "napster",
     name: r.name,
     images: [],
   }));
@@ -106,10 +104,8 @@ function trackResultToSong(results: INapsterTrack[]): Track[] {
     artistId: r.artistId,
     artistName: r.artistName,
     duration: r.playbackSeconds,
-    from: "napster",
     images: getImages(r.albumId),
     name: r.name,
-    source: "",
   }));
 }
 
