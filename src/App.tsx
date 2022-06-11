@@ -85,11 +85,15 @@ const App: FunctionalComponent = () => {
     <>
       {isSignedIn ? (
         <div>
-          <Button onClick={onLogout}>Logout</Button>
+          <Button variant="contained" onClick={onLogout}>
+            Logout
+          </Button>
         </div>
       ) : (
         <div>
-          <Button onClick={onImplicitLogin}>Login</Button>
+          <Button variant="contained" onClick={onImplicitLogin}>
+            Login
+          </Button>
         </div>
       )}
       <pre>{message}</pre>
