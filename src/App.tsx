@@ -2,7 +2,7 @@ import { Button } from "@mui/material";
 import axios from "axios";
 import { FunctionalComponent } from "preact";
 import { useState, useEffect } from "preact/hooks";
-import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
+import { API_KEY, TOKEN_SERVER } from "./shared";
 
 const napsterAuthUrl = "https://api.napster.com/oauth/authorize";
 const redirectPath = "/login_popup.html";
@@ -51,12 +51,11 @@ const App: FunctionalComponent = () => {
       }
       const params = new URLSearchParams();
       params.append("client_id", API_KEY);
-      params.append("client_secret", API_SECRET);
       params.append("response_type", "code");
       params.append("grant_type", "authorization_code");
       params.append("redirect_uri", redirectUri);
       params.append("code", returnUrl.searchParams.get("code") || "");
-      const result = await axios.post(TOKEN_URL, params, {
+      const result = await axios.post(TOKEN_SERVER, params, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },

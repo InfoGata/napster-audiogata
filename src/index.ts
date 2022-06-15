@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_KEY, API_SECRET, TOKEN_URL } from "./shared";
+import { API_KEY, TOKEN_SERVER } from "./shared";
 import "audiogata-plugin-typings";
 import {
   INapsterResult,
@@ -24,11 +24,10 @@ const refreshToken = async () => {
 
   const params = new URLSearchParams();
   params.append("client_id", API_KEY);
-  params.append("client_secret", API_SECRET);
   params.append("grant_type", "refresh_token");
   params.append("refresh_token", auth.refresh_token);
   params.append("response_type", "code");
-  const result = await axios.post(TOKEN_URL, params, {
+  const result = await axios.post(TOKEN_SERVER, params, {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
