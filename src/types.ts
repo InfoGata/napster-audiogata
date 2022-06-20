@@ -52,7 +52,7 @@ export interface NapsterAuthResponse {
 export interface NapsterPlaylist {
   description: string;
   id: string;
-  images: IImage[];
+  images: ImageInfo[];
   name: string;
 }
 

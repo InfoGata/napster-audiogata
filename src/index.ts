@@ -365,6 +365,14 @@ async function searchAll(request: SearchRequest): Promise<SearchAllResult> {
   return { tracks, albums, artists };
 }
 
+async function getTopItems(): Promise<SearchAllResult> {
+  const url = `${path}/tracks/top`;
+  const result = await http.get<INapsterData>(url);
+  return {
+    tracks: { items: trackResultToSong(result.data.tracks) },
+  };
+}
+
 const init = async () => {
   await napsterPlayer.loadScripts();
   const authString = localStorage.getItem("auth");
@@ -376,6 +384,7 @@ const init = async () => {
   application.onGetAlbumTracks = getAlbumTracks;
   application.onGetArtistAlbums = getArtistAlbums;
   application.onGetPlaylistTracks = getPlaylistTracks;
+  application.onGetTopItems = getTopItems;
 };
 
 init();
