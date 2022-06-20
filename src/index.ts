@@ -75,24 +75,39 @@ function albumResultToAlbum(results: INapsterAlbum[]): Album[] {
     artistId: r.contributingArtists.primaryArtist,
     artistName: r.artistName,
     name: r.name,
-    images: [],
+    images: getAlbumImages(r.id),
   }));
 }
 
-function aristResultToArtist(results: INapsterArtist[]): Artist[] {
+function artistResultToArtist(results: INapsterArtist[]): Artist[] {
   return results.map((r) => ({
     apiId: r.id.toString(),
     name: r.name,
-    images: [],
+    images: getArtistImages(r.id),
   }));
 }
 
-function getImages(albumId: string): ImageInfo[] {
+function getAlbumImages(albumId: string): ImageInfo[] {
   const sizes = [70, 170, 200, 300, 500];
   return sizes.map((s) => ({
     height: s,
     url: `https://api.napster.com/imageserver/v2/albums/${albumId}/images/${s}x${s}.jpg`,
     width: s,
+  }));
+}
+
+function getArtistImages(artistId: string): ImageInfo[] {
+  const sizes = [
+    { width: 70, height: 47 },
+    { width: 150, height: 100 },
+    { width: 356, height: 237 },
+    { width: 633, height: 422 },
+  ];
+
+  return sizes.map((s) => ({
+    height: s.height,
+    width: s.width,
+    url: `https://api.napster.com/imageserver/v2/artists/${artistId}/images/${s.width}x${s.height}.jpg`,
   }));
 }
 
@@ -103,7 +118,7 @@ function trackResultToSong(results: INapsterTrack[]): Track[] {
     artistId: r.artistId,
     artistName: r.artistName,
     duration: r.playbackSeconds,
-    images: getImages(r.albumId),
+    images: getAlbumImages(r.albumId),
     name: r.name,
   }));
 }
@@ -299,7 +314,7 @@ async function searchArtists(
     const results = await axios.get<INapsterResult>(url);
     const artists = results.data.search.data.artists;
     const response: SearchArtistResult = {
-      items: aristResultToArtist(artists),
+      items: artistResultToArtist(artists),
     };
     return response;
   } catch {
