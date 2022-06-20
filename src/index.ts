@@ -184,11 +184,15 @@ class NapsterPlayer {
   }
 
   public async resume() {
-    Napster.player.resume();
+    try {
+      Napster.player.resume();
+    } catch {}
   }
 
   public async seek(time: number) {
-    Napster.player.seek(time);
+    try {
+      Napster.player.seek(time);
+    } catch {}
   }
 
   public async setVolume(volume: number) {
@@ -374,17 +378,17 @@ async function getTopItems(): Promise<SearchAllResult> {
 }
 
 const init = async () => {
+  application.onSearchAll = searchAll;
+  application.onGetAlbumTracks = getAlbumTracks;
+  application.onGetArtistAlbums = getArtistAlbums;
+  application.onGetPlaylistTracks = getPlaylistTracks;
+  application.onGetTopItems = getTopItems;
   await napsterPlayer.loadScripts();
   const authString = localStorage.getItem("auth");
   if (authString) {
     auth = JSON.parse(authString);
     loadPlayer();
   }
-  application.onSearchAll = searchAll;
-  application.onGetAlbumTracks = getAlbumTracks;
-  application.onGetArtistAlbums = getArtistAlbums;
-  application.onGetPlaylistTracks = getPlaylistTracks;
-  application.onGetTopItems = getTopItems;
 };
 
 init();
