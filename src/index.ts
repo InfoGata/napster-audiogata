@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_KEY, TOKEN_SERVER } from "./shared";
+import { API_KEY, TOKEN_SERVER, TOKEN_URL } from "./shared";
 import "audiogata-plugin-typings";
 import {
   INapsterResult,
@@ -9,25 +9,43 @@ import {
   INapsterData,
   NapsterAuthResponse,
   NapsterPlaylistResponse,
+  UiMessageType,
+  MessageType,
 } from "./types";
 
 const http = axios.create();
 
 declare var Napster: any;
-declare var application: Application;
 let auth: NapsterAuthResponse | undefined;
+
+const sendMessage = (message: MessageType) => {
+  application.postUiMessage(message);
+};
+
+const getApiKey = () => {
+  const apiKey = localStorage.getItem("apiKey");
+  return apiKey || API_KEY;
+};
 
 const refreshToken = async () => {
   if (!auth) {
     return;
   }
+  const apiKey = localStorage.getItem("clientId");
+  const apiSecret = localStorage.getItem("clientSecret");
 
+  let tokenUrl = TOKEN_SERVER;
   const params = new URLSearchParams();
-  params.append("client_id", API_KEY);
+  params.append("client_id", apiKey || API_KEY);
   params.append("grant_type", "refresh_token");
   params.append("refresh_token", auth.refresh_token);
   params.append("response_type", "code");
-  const result = await axios.post(TOKEN_SERVER, params, {
+
+  if (apiKey && apiSecret) {
+    params.append("client_secret", apiSecret);
+    tokenUrl = TOKEN_URL;
+  }
+  const result = await axios.post(tokenUrl, params, {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
@@ -153,7 +171,7 @@ class NapsterPlayer {
 
   public initalizePlayer(accessToken: string, refreshToken?: string) {
     Napster.init({
-      consumerKey: API_KEY,
+      consumerKey: getApiKey(),
       isHTML5Compatible: true,
     });
     Napster.member.set({
@@ -223,14 +241,18 @@ const sendOrigin = async () => {
   const domain = hostArray.join(".");
   const origin = `${document.location.protocol}//${domain}`;
   const pluginId = await application.getPluginId();
-  application.postUiMessage({
-    type: "origin",
+  const apiKey = localStorage.getItem("apiKey") ?? "";
+  const apiSecret = localStorage.getItem("apiSecret") ?? "";
+  sendMessage({
+    type: "info",
     origin: origin,
     pluginId: pluginId,
+    apiKey: apiKey,
+    apiSecret: apiSecret,
   });
 };
 
-application.onUiMessage = async (message: any) => {
+application.onUiMessage = async (message: UiMessageType) => {
   switch (message.type) {
     case "login":
       auth = message.auth;
@@ -243,9 +265,16 @@ application.onUiMessage = async (message: any) => {
     case "check-login":
       const authStr = localStorage.getItem("auth");
       if (authStr) {
-        application.postUiMessage({ type: "login", auth: JSON.parse(authStr) });
+        sendMessage({
+          type: "login",
+          auth: JSON.parse(authStr) as NapsterAuthResponse,
+        });
       }
       await sendOrigin();
+      break;
+    case "set-keys":
+      localStorage.setItem("apiKey", message.apiKey);
+      localStorage.setItem("apiSecret", message.apiSecret);
       break;
   }
 };
@@ -255,7 +284,9 @@ application.onDeepLinkMessage = async (message: string) => {
 };
 
 async function getArtistAlbums(artist: Artist) {
-  const url = `${path}/artists/${artist.apiId}/albums/top?apikey=${API_KEY}`;
+  const url = `${path}/artists/${
+    artist.apiId
+  }/albums/top?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
     const albums = results.data.albums;
@@ -266,7 +297,7 @@ async function getArtistAlbums(artist: Artist) {
 }
 
 async function getAlbumTracks(album: Album) {
-  const url = `${path}/albums/${album.apiId}/tracks?apikey=${API_KEY}`;
+  const url = `${path}/albums/${album.apiId}/tracks?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
     const tracks = results.data.tracks;
@@ -299,7 +330,9 @@ async function getPlaylistTracks(
   request: PlaylistTrackRequest
 ): Promise<SearchTrackResult> {
   const limit = 200;
-  const url = `${path}/playlists/${request.playlist.apiId}/tracks?apikey=${API_KEY}&limit=${limit}`;
+  const url = `${path}/playlists/${
+    request.playlist.apiId
+  }/tracks?apikey=${getApiKey()}&limit=${limit}`;
   const result = await http.get<INapsterData>(url);
 
   const response: SearchTrackResult = {
@@ -311,7 +344,7 @@ async function getPlaylistTracks(
 async function searchArtists(
   request: SearchRequest
 ): Promise<SearchArtistResult> {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+  const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=artist`;
   try {
@@ -329,7 +362,7 @@ async function searchArtists(
 async function searchAlbums(
   request: SearchRequest
 ): Promise<SearchAlbumResult> {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+  const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=album`;
   try {
@@ -347,7 +380,7 @@ async function searchAlbums(
 async function searchTracks(
   request: SearchRequest
 ): Promise<SearchTrackResult> {
-  const url = `${path}/search?apikey=${API_KEY}&query=${encodeURIComponent(
+  const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=track`;
   try {

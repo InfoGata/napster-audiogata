@@ -69,3 +69,40 @@ export interface PluginInfo {
   optionsHtml?: string;
   optionsSameOrigin?: boolean;
 }
+
+type UiCheckLoginType = {
+  type: "check-login";
+};
+type UiLoginType = {
+  type: "login";
+  auth: NapsterAuthResponse;
+};
+type UiLogoutType = {
+  type: "logout";
+};
+type UiSetKeysType = {
+  type: "set-keys";
+  apiKey: string;
+  apiSecret: string;
+};
+
+export type UiMessageType =
+  | UiCheckLoginType
+  | UiLoginType
+  | UiLogoutType
+  | UiSetKeysType;
+
+type LoginType = {
+  type: "login";
+  auth: NapsterAuthResponse;
+};
+
+type InfoType = {
+  type: "info";
+  origin: string;
+  pluginId: string;
+  apiKey: string;
+  apiSecret: string;
+};
+
+export type MessageType = LoginType | InfoType;
