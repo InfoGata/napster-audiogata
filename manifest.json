@@ -1,4 +1,5 @@
 {
+  "id": "4tbwYICEMHms82I7omxPz",
   "name": "Plugin for Napster",
   "version": "1.0.0",
   "script": "dist/index.js",
