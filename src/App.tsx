@@ -112,7 +112,7 @@ const App: FunctionalComponent = () => {
   };
 
   const onLogout = () => {
-    parent.postMessage("logout", "*");
+    sendUiMessage({ type: "logout" });
     setIsSignedIn(false);
   };
 
