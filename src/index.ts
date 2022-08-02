@@ -283,27 +283,29 @@ application.onDeepLinkMessage = async (message: string) => {
   application.postUiMessage({ type: "deeplink", url: message });
 };
 
-async function getArtistAlbums(artist: Artist) {
+async function getArtistAlbums(request: ArtistAlbumRequest) {
   const url = `${path}/artists/${
-    artist.apiId
+    request.artist.apiId
   }/albums/top?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
     const albums = results.data.albums;
-    return albumResultToAlbum(albums);
+    return { items: albumResultToAlbum(albums) };
   } catch {
-    return [];
+    return { items: [] };
   }
 }
 
-async function getAlbumTracks(album: Album) {
-  const url = `${path}/albums/${album.apiId}/tracks?apikey=${getApiKey()}`;
+async function getAlbumTracks(request: AlbumTrackRequest) {
+  const url = `${path}/albums/${
+    request.album.apiId
+  }/tracks?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
     const tracks = results.data.tracks;
-    return trackResultToSong(tracks);
+    return { items: trackResultToSong(tracks) };
   } catch {
-    return [];
+    return { items: [] };
   }
 }
 
