@@ -330,14 +330,23 @@ async function getUserPlaylists(
 
 async function getPlaylistTracks(
   request: PlaylistTrackRequest
-): Promise<SearchTrackResult> {
+): Promise<PlaylistTracksResult> {
   const limit = 200;
+
+  const detailsUrl = `${path}/playlists/${
+    request.playlist.apiId
+  }?apikey=${getApiKey()}`;
   const url = `${path}/playlists/${
     request.playlist.apiId
   }/tracks?apikey=${getApiKey()}&limit=${limit}`;
+  const detailsResult = await http.get<NapsterPlaylistResponse>(detailsUrl);
   const result = await http.get<INapsterData>(url);
 
-  const response: SearchTrackResult = {
+  const response: PlaylistTracksResult = {
+    playlist: {
+      name: detailsResult.data.playlists[0].name,
+      images: detailsResult.data.playlists[0].images,
+    },
     items: trackResultToSong(result.data.tracks),
   };
   return response;
