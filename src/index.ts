@@ -285,7 +285,7 @@ application.onDeepLinkMessage = async (message: string) => {
 
 async function getArtistAlbums(request: ArtistAlbumRequest) {
   const url = `${path}/artists/${
-    request.artist.apiId
+    request.apiId
   }/albums/top?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
@@ -297,9 +297,7 @@ async function getArtistAlbums(request: ArtistAlbumRequest) {
 }
 
 async function getAlbumTracks(request: AlbumTrackRequest) {
-  const url = `${path}/albums/${
-    request.album.apiId
-  }/tracks?apikey=${getApiKey()}`;
+  const url = `${path}/albums/${request.apiId}/tracks?apikey=${getApiKey()}`;
   try {
     const results = await axios.get<INapsterData>(url);
     const tracks = results.data.tracks;
@@ -333,11 +331,9 @@ async function getPlaylistTracks(
 ): Promise<PlaylistTracksResult> {
   const limit = 200;
 
-  const detailsUrl = `${path}/playlists/${
-    request.playlist.apiId
-  }?apikey=${getApiKey()}`;
+  const detailsUrl = `${path}/playlists/${request.apiId}?apikey=${getApiKey()}`;
   const url = `${path}/playlists/${
-    request.playlist.apiId
+    request.apiId
   }/tracks?apikey=${getApiKey()}&limit=${limit}`;
   const detailsResult = await http.get<NapsterPlaylistResponse>(detailsUrl);
   const result = await http.get<INapsterData>(url);
