@@ -190,8 +190,8 @@ class NapsterPlayer {
     }
   }
 
-  public async play(song: Track) {
-    const id = song.apiId || "";
+  public async play(request: PlayTrackRequest) {
+    const id = request.apiId || "";
     Napster.player.play(id);
   }
 
