@@ -283,25 +283,52 @@ application.onDeepLinkMessage = async (message: string) => {
   application.postUiMessage({ type: "deeplink", url: message });
 };
 
-async function getArtistAlbums(request: ArtistAlbumRequest) {
+async function getArtistAlbums(
+  request: ArtistAlbumRequest
+): Promise<ArtistAlbumsResult> {
+  const limit = 200;
+  const detailsUrl = `${path}/artists/${request.apiId}?apikey=${getApiKey()}`;
   const url = `${path}/artists/${
     request.apiId
-  }/albums/top?apikey=${getApiKey()}`;
+  }/albums/top?apikey=${getApiKey()}&limit=${limit}`;
   try {
+    const details = await axios.get<INapsterData>(detailsUrl);
     const results = await axios.get<INapsterData>(url);
     const albums = results.data.albums;
-    return { items: albumResultToAlbum(albums) };
+    const aritistInfo = details.data.artists[0];
+    return {
+      items: albumResultToAlbum(albums),
+      artist: {
+        name: aritistInfo.name,
+        apiId: request.apiId || "",
+        images: getArtistImages(request.apiId || ""),
+      },
+    };
   } catch {
     return { items: [] };
   }
 }
 
-async function getAlbumTracks(request: AlbumTrackRequest) {
+async function getAlbumTracks(
+  request: AlbumTrackRequest
+): Promise<AlbumTracksResult> {
+  const detailsUrl = `${path}/albums/${request.apiId}?apikey=${getApiKey()}`;
   const url = `${path}/albums/${request.apiId}/tracks?apikey=${getApiKey()}`;
   try {
+    const details = await axios.get<INapsterData>(detailsUrl);
     const results = await axios.get<INapsterData>(url);
     const tracks = results.data.tracks;
-    return { items: trackResultToSong(tracks) };
+    const albumData = details.data.albums[0];
+    return {
+      items: trackResultToSong(tracks),
+      album: {
+        artistName: albumData.artistName,
+        artistApiId: albumData.contributingArtists.primaryArtist,
+        apiId: request.apiId || "",
+        name: albumData.name,
+        images: getAlbumImages(request.apiId || ""),
+      },
+    };
   } catch {
     return { items: [] };
   }
