@@ -192,7 +192,7 @@ class NapsterPlayer {
 
   public async play(request: PlayTrackRequest) {
     const id = request.apiId || "";
-    Napster.player.play(id);
+    Napster.player.play(id, request.seekTime);
   }
 
   public async pause() {
