@@ -88,30 +88,36 @@ http.interceptors.response.use(
 const path = "https://api.napster.com/v2.2";
 
 function albumResultToAlbum(results: INapsterAlbum[]): Album[] {
-  return results.map((r) => ({
-    apiId: r.id.toString(),
-    artistId: r.contributingArtists.primaryArtist,
-    artistName: r.artistName,
-    name: r.name,
-    images: getAlbumImages(r.id),
-  }));
+  return results.map(
+    (r): Album => ({
+      apiId: r.id.toString(),
+      artistApiId: r.contributingArtists.primaryArtist,
+      artistName: r.artistName,
+      name: r.name,
+      images: getAlbumImages(r.id),
+    })
+  );
 }
 
 function artistResultToArtist(results: INapsterArtist[]): Artist[] {
-  return results.map((r) => ({
-    apiId: r.id.toString(),
-    name: r.name,
-    images: getArtistImages(r.id),
-  }));
+  return results.map(
+    (r): Artist => ({
+      apiId: r.id.toString(),
+      name: r.name,
+      images: getArtistImages(r.id),
+    })
+  );
 }
 
 function getAlbumImages(albumId: string): ImageInfo[] {
   const sizes = [70, 170, 200, 300, 500];
-  return sizes.map((s) => ({
-    height: s,
-    url: `https://api.napster.com/imageserver/v2/albums/${albumId}/images/${s}x${s}.jpg`,
-    width: s,
-  }));
+  return sizes.map(
+    (s): ImageInfo => ({
+      height: s,
+      url: `https://api.napster.com/imageserver/v2/albums/${albumId}/images/${s}x${s}.jpg`,
+      width: s,
+    })
+  );
 }
 
 function getArtistImages(artistId: string): ImageInfo[] {
@@ -122,23 +128,27 @@ function getArtistImages(artistId: string): ImageInfo[] {
     { width: 633, height: 422 },
   ];
 
-  return sizes.map((s) => ({
-    height: s.height,
-    width: s.width,
-    url: `https://api.napster.com/imageserver/v2/artists/${artistId}/images/${s.width}x${s.height}.jpg`,
-  }));
+  return sizes.map(
+    (s): ImageInfo => ({
+      height: s.height,
+      width: s.width,
+      url: `https://api.napster.com/imageserver/v2/artists/${artistId}/images/${s.width}x${s.height}.jpg`,
+    })
+  );
 }
 
 function trackResultToSong(results: INapsterTrack[]): Track[] {
-  return results.map((r) => ({
-    albumId: r.albumId,
-    apiId: r.id,
-    artistId: r.artistId,
-    artistName: r.artistName,
-    duration: r.playbackSeconds,
-    images: getAlbumImages(r.albumId),
-    name: r.name,
-  }));
+  return results.map(
+    (r): Track => ({
+      albumApiId: r.albumId,
+      apiId: r.id,
+      artistApiId: r.artistId,
+      artistName: r.artistName,
+      duration: r.playbackSeconds,
+      images: getAlbumImages(r.albumId),
+      name: r.name,
+    })
+  );
 }
 
 class NapsterPlayer {
@@ -344,11 +354,13 @@ async function getUserPlaylists(
   const result = await http.get<NapsterPlaylistResponse>(url);
 
   const response: SearchPlaylistResult = {
-    items: result.data.playlists.map((p) => ({
-      name: p.name,
-      images: p.images,
-      apiId: p.id,
-    })),
+    items: result.data.playlists.map(
+      (p): PlaylistInfo => ({
+        name: p.name,
+        images: p.images,
+        apiId: p.id,
+      })
+    ),
   };
   return response;
 }
@@ -378,14 +390,22 @@ async function getPlaylistTracks(
 async function searchArtists(
   request: SearchRequest
 ): Promise<SearchArtistResult> {
+  const perPage = 20;
+  const offset = request.page?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
-  )}&type=artist`;
+  )}&type=artist&per_type_limit=${perPage}&offset=${offset}`;
   try {
     const results = await axios.get<INapsterResult>(url);
     const artists = results.data.search.data.artists;
+    const page: PageInfo = {
+      offset: offset,
+      totalResults: results.data.meta.totalCount,
+      resultsPerPage: perPage,
+    };
     const response: SearchArtistResult = {
       items: artistResultToArtist(artists),
+      pageInfo: page,
     };
     return response;
   } catch {
@@ -396,14 +416,22 @@ async function searchArtists(
 async function searchAlbums(
   request: SearchRequest
 ): Promise<SearchAlbumResult> {
+  const perPage = 20;
+  const offset = request.page?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
-  )}&type=album`;
+  )}&type=album&per_type_limit=${perPage}&offset=${offset}`;
   try {
     const results = await axios.get<INapsterResult>(url);
     const albums = results.data.search.data.albums;
+    const page: PageInfo = {
+      offset: offset,
+      totalResults: results.data.meta.totalCount,
+      resultsPerPage: perPage,
+    };
     const response: SearchAlbumResult = {
       items: albumResultToAlbum(albums),
+      pageInfo: page,
     };
     return response;
   } catch {
@@ -414,13 +442,23 @@ async function searchAlbums(
 async function searchTracks(
   request: SearchRequest
 ): Promise<SearchTrackResult> {
+  const perPage = 20;
+  const offset = request.page?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
-  )}&type=track`;
+  )}&type=track&per_type_limit=${perPage}&offset=${offset}`;
   try {
     const results = await axios.get<INapsterResult>(url);
     const tracks = results.data.search.data.tracks;
-    const response: SearchTrackResult = { items: trackResultToSong(tracks) };
+    const page: PageInfo = {
+      offset: offset,
+      totalResults: results.data.meta.totalCount,
+      resultsPerPage: perPage,
+    };
+    const response: SearchTrackResult = {
+      items: trackResultToSong(tracks),
+      pageInfo: page,
+    };
     return response;
   } catch {
     return { items: [] };
@@ -446,6 +484,9 @@ async function getTopItems(): Promise<SearchAllResult> {
 
 const init = async () => {
   application.onSearchAll = searchAll;
+  application.onSearchAlbums = searchAlbums;
+  application.onSearchTracks = searchTracks;
+  application.onSearchArtists = searchArtists;
   application.onGetAlbumTracks = getAlbumTracks;
   application.onGetArtistAlbums = getArtistAlbums;
   application.onGetPlaylistTracks = getPlaylistTracks;
