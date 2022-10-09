@@ -391,7 +391,7 @@ async function searchArtists(
   request: SearchRequest
 ): Promise<SearchArtistResult> {
   const perPage = 20;
-  const offset = request.page?.offset || 0;
+  const offset = request.pageInfo?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=artist&per_type_limit=${perPage}&offset=${offset}`;
@@ -417,7 +417,7 @@ async function searchAlbums(
   request: SearchRequest
 ): Promise<SearchAlbumResult> {
   const perPage = 20;
-  const offset = request.page?.offset || 0;
+  const offset = request.pageInfo?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=album&per_type_limit=${perPage}&offset=${offset}`;
@@ -443,7 +443,7 @@ async function searchTracks(
   request: SearchRequest
 ): Promise<SearchTrackResult> {
   const perPage = 20;
-  const offset = request.page?.offset || 0;
+  const offset = request.pageInfo?.offset || 0;
   const url = `${path}/search?apikey=${getApiKey()}&query=${encodeURIComponent(
     request.query
   )}&type=track&per_type_limit=${perPage}&offset=${offset}`;
