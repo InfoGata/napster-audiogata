@@ -1,6 +1,6 @@
 {
   "name": "napster-audiogata",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "",
   "author": "",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "react/jsx-runtime": "preact/jsx-runtime"
   },
   "devDependencies": {
-    "audiogata-plugin-typings": "git@gitlab.com:elijahgreen/audiogata-plugin-typings.git",
+    "audiogata-plugin-typings": "1.0.1",
     "parcel": "^2.5.0",
     "process": "^0.11.10",
     "typescript": "^4.2.3"
