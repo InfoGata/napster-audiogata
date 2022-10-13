@@ -1,6 +1,5 @@
 import axios from "axios";
 import { API_KEY, TOKEN_SERVER, TOKEN_URL } from "./shared";
-import "audiogata-plugin-typings";
 import {
   INapsterResult,
   INapsterAlbum,
