@@ -4,5 +4,6 @@
   "version": "1.2.6",
   "script": "dist/index.js",
   "options": "dist/options.html",
-  "description": "Play music from napster. Requires napster login."
+  "description": "Play music from napster. Requires napster login.",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/InfoGata/napster-audiogata@latest/manifest.json"
 }
