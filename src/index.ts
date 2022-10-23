@@ -285,6 +285,9 @@ application.onUiMessage = async (message: UiMessageType) => {
       localStorage.setItem("apiKey", message.apiKey);
       localStorage.setItem("apiSecret", message.apiSecret);
       break;
+    default:
+      const _exhaustive: never = message;
+      break;
   }
 };
 

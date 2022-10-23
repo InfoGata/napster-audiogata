@@ -49,6 +49,9 @@ const App: FunctionalComponent = () => {
           setApiKey(event.data.apiKey);
           setApiSecret(event.data.apiSecret);
           break;
+        default:
+          const _exhaustive: never = event.data;
+          break;
       }
     };
     window.addEventListener("message", onMessage);
