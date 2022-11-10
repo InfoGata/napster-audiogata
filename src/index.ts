@@ -17,6 +17,11 @@ const http = axios.create();
 declare var Napster: any;
 let auth: NapsterAuthResponse | undefined;
 
+let scriptReadyResolve: any;
+let scriptReady = new Promise((resolve) => {
+  scriptReadyResolve = resolve;
+});
+
 const sendMessage = (message: MessageType) => {
   application.postUiMessage(message);
 };
@@ -176,9 +181,15 @@ class NapsterPlayer {
     await this.loadScript(
       "https://cdn.jsdelivr.net/gh/Napster/napster.js@0b3beead613b52bdcec9062941f92c504919976e/napster.min.js"
     );
+    scriptReadyResolve(undefined);
   }
 
-  public initalizePlayer(accessToken: string, refreshToken?: string) {
+  public async initalizePlayer(accessToken: string, refreshToken?: string) {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(), 5000);
+    });
+    await Promise.race([scriptReady, timeoutPromise]);
+
     Napster.init({
       consumerKey: getApiKey(),
       isHTML5Compatible: true,
@@ -200,6 +211,11 @@ class NapsterPlayer {
   }
 
   public async play(request: PlayTrackRequest) {
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(), 5000);
+    });
+    await Promise.race([scriptReady, timeoutPromise]);
+
     const id = request.apiId || "";
     Napster.player.play(id, request.seekTime);
   }
@@ -231,16 +247,16 @@ class NapsterPlayer {
 
 const napsterPlayer = new NapsterPlayer();
 
-const loadPlayer = () => {
+const loadPlayer = async () => {
   if (!auth) return;
 
-  napsterPlayer.initalizePlayer(auth.access_token, auth.refresh_token);
   application.onPlay = napsterPlayer.play.bind(napsterPlayer);
   application.onPause = napsterPlayer.pause.bind(napsterPlayer);
   application.onResume = napsterPlayer.resume.bind(napsterPlayer);
   application.onSetVolume = napsterPlayer.setVolume.bind(napsterPlayer);
   application.onSeek = napsterPlayer.seek.bind(napsterPlayer);
   application.onGetUserPlaylists = getUserPlaylists;
+  await napsterPlayer.initalizePlayer(auth.access_token, auth.refresh_token);
 };
 
 const sendOrigin = async () => {
@@ -493,12 +509,12 @@ const init = async () => {
   application.onGetArtistAlbums = getArtistAlbums;
   application.onGetPlaylistTracks = getPlaylistTracks;
   application.onGetTopItems = getTopItems;
-  await napsterPlayer.loadScripts();
   const authString = localStorage.getItem("auth");
   if (authString) {
     auth = JSON.parse(authString);
     loadPlayer();
   }
+  await napsterPlayer.loadScripts();
 };
 
 init();
