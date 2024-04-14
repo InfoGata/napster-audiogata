@@ -1,23 +1,15 @@
+import axios from "axios";
+import { createEffect, createSignal } from "solid-js";
 import {
   Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Button,
-  CssBaseline,
-  IconButton,
-  InputAdornment,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import axios from "axios";
-import { FunctionalComponent, JSX } from "preact";
-import { useState, useEffect } from "preact/hooks";
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "./components/ui/accordion";
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
 import { API_KEY, TOKEN_SERVER, TOKEN_URL } from "./shared";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { MessageType, UiMessageType } from "./types";
-import { VisibilityOff, Visibility } from "@mui/icons-material";
 
 const napsterAuthUrl = "https://api.napster.com/oauth/authorize";
 const redirectPath = "/login_popup.html";
@@ -26,18 +18,16 @@ const sendUiMessage = (message: UiMessageType) => {
   parent.postMessage(message, "*");
 };
 
-const App: FunctionalComponent = () => {
-  const [isSignedIn, setIsSignedIn] = useState(false);
-  const [pluginId, setPluginId] = useState("");
-  const [redirectUri, setRedirectUri] = useState("");
-  const [message, setMessage] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
-  const [useOwnKeys, setUseOwnKeys] = useState(false);
+const App = () => {
+  const [isSignedIn, setIsSignedIn] = createSignal(false);
+  const [pluginId, setPluginId] = createSignal("");
+  const [redirectUri, setRedirectUri] = createSignal("");
+  const [message, setMessage] = createSignal("");
+  const [apiKey, setApiKey] = createSignal("");
+  const [apiSecret, setApiSecret] = createSignal("");
+  const [useOwnKeys, setUseOwnKeys] = createSignal(false);
 
-  useEffect(() => {
+  createEffect(() => {
     const onMessage = (event: MessageEvent<MessageType>) => {
       switch (event.data.type) {
         case "login":
@@ -57,14 +47,14 @@ const App: FunctionalComponent = () => {
     window.addEventListener("message", onMessage);
     parent.postMessage({ type: "check-login" }, "*");
     () => window.removeEventListener("message", onMessage);
-  }, []);
+  });
 
   const onLogin = async () => {
     const state = { pluginId: pluginId };
     const authUrl = new URL(napsterAuthUrl);
-    const clientId = useOwnKeys ? apiKey : API_KEY;
+    const clientId = useOwnKeys() ? apiKey() : API_KEY;
     authUrl.searchParams.append("client_id", clientId);
-    authUrl.searchParams.append("redirect_uri", redirectUri);
+    authUrl.searchParams.append("redirect_uri", redirectUri());
     authUrl.searchParams.append("response_type", "code");
     authUrl.searchParams.append("state", JSON.stringify(state));
     const newWindow = window.open(authUrl);
@@ -84,11 +74,11 @@ const App: FunctionalComponent = () => {
       params.append("client_id", clientId);
       params.append("response_type", "code");
       params.append("grant_type", "authorization_code");
-      params.append("redirect_uri", redirectUri);
+      params.append("redirect_uri", redirectUri());
       params.append("code", returnUrl.searchParams.get("code") || "");
-      if (useOwnKeys) {
+      if (useOwnKeys()) {
         tokenUrl = TOKEN_URL;
-        params.append("client_secret", apiSecret);
+        params.append("client_secret", apiSecret());
       }
       const result = await axios.post(tokenUrl, params, {
         headers: {
@@ -110,10 +100,6 @@ const App: FunctionalComponent = () => {
     };
   };
 
-  const onAccordionChange = (_: any, expanded: boolean) => {
-    setShowAdvanced(expanded);
-  };
-
   const onLogout = () => {
     sendUiMessage({ type: "logout" });
     setIsSignedIn(false);
@@ -123,8 +109,8 @@ const App: FunctionalComponent = () => {
     setUseOwnKeys(!!apiKey);
     sendUiMessage({
       type: "set-keys",
-      apiSecret: apiSecret,
-      apiKey: apiKey,
+      apiSecret: apiSecret(),
+      apiKey: apiKey(),
     });
   };
 
@@ -139,93 +125,56 @@ const App: FunctionalComponent = () => {
     });
   };
 
-  const handleClickShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleMouseDownPassword = (event: JSX.TargetedEvent) => {
-    event.preventDefault();
-  };
-
   return (
-    <Box
-      sx={{ display: "flex", "& .MuiTextField-root": { m: 1, width: "25ch" } }}
-    >
-      <CssBaseline />
-      {isSignedIn ? (
+    <div class="flex">
+      {isSignedIn() ? (
         <div>
-          <Button variant="contained" onClick={onLogout}>
-            Logout
-          </Button>
+          <Button onClick={onLogout}>Logout</Button>
         </div>
       ) : (
         <div>
-          <Button variant="contained" onClick={onLogin}>
-            Login
-          </Button>
-          <pre>{message}</pre>
-          {useOwnKeys && (
-            <Typography>
-              Using keys set in the Advanced Configuration
-            </Typography>
-          )}
-          <Accordion expanded={showAdvanced} onChange={onAccordionChange}>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon />}
-              aria-controls="panel1d-content"
-              id="panel1d-header"
-            >
-              <Typography>Advanced Configuration</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Typography>Supplying your own keys:</Typography>
-              <Typography>{redirectUri} needs be added Callback URL</Typography>
-              <div>
-                <TextField
-                  label="Api Key"
-                  value={apiKey}
-                  onChange={(e) => {
-                    const value = e.currentTarget.value;
-                    setApiKey(value);
-                  }}
-                />
-                <TextField
-                  type={showPassword ? "text" : "password"}
-                  label="Api Secret "
-                  value={apiSecret}
-                  onChange={(e) => {
-                    const value = e.currentTarget.value;
-                    setApiSecret(value);
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="toggle password visibility"
-                          onClick={handleClickShowPassword}
-                          onMouseDown={handleMouseDownPassword}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </div>
-              <Stack spacing={2} direction="row">
-                <Button variant="contained" onClick={onSaveKeys}>
-                  Save
-                </Button>
-                <Button variant="contained" onClick={onClearKeys} color="error">
-                  Clear
-                </Button>
-              </Stack>
-            </AccordionDetails>
+          <Button onClick={onLogin}>Login</Button>
+          <pre>{message()}</pre>
+          {useOwnKeys() && <p>Using keys set in the Advanced Configuration</p>}
+          <Accordion multiple collapsible>
+            <AccordionItem value="item-1">
+              <AccordionTrigger>Advanced Configuration</AccordionTrigger>
+
+              <AccordionContent>
+                <div class="flex flex-col gap-4 m-4"></div>
+                <p>Supplying your own keys:</p>
+                <p>{redirectUri()} needs be added Callback URL</p>
+                <div>
+                  <Input
+                    placeholder="Api Key"
+                    value={apiKey()}
+                    onChange={(e) => {
+                      const value = e.currentTarget.value;
+                      setApiKey(value);
+                    }}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Api Secret "
+                    value={apiSecret()}
+                    onChange={(e) => {
+                      const value = e.currentTarget.value;
+                      setApiSecret(value);
+                    }}
+                  />
+                </div>
+                <div class="flex flex-row gap-2">
+                  <Button onClick={onSaveKeys}>Save</Button>
+                  <Button onClick={onClearKeys} color="error">
+                    Clear
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </div>
       )}
-    </Box>
+    </div>
   );
 };
 
