@@ -517,4 +517,11 @@ const init = async () => {
   await napsterPlayer.loadScripts();
 };
 
+const changeTheme = (theme: Theme) => {
+  localStorage.setItem("kb-color-mode", theme);
+};
+application.onChangeTheme = async (theme: Theme) => {
+  changeTheme(theme);
+};
+
 init();
