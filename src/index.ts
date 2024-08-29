@@ -500,6 +500,10 @@ async function getTopItems(): Promise<SearchAllResult> {
   };
 }
 
+const changeTheme = (theme: Theme) => {
+  localStorage.setItem("kb-color-mode", theme);
+};
+
 const init = async () => {
   application.onSearchAll = searchAll;
   application.onSearchAlbums = searchAlbums;
@@ -515,11 +519,10 @@ const init = async () => {
     loadPlayer();
   }
   await napsterPlayer.loadScripts();
+  const theme = await application.getTheme();
+  changeTheme(theme);
 };
 
-const changeTheme = (theme: Theme) => {
-  localStorage.setItem("kb-color-mode", theme);
-};
 application.onChangeTheme = async (theme: Theme) => {
   changeTheme(theme);
 };

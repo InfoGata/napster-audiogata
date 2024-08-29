@@ -127,53 +127,57 @@ const App = () => {
 
   return (
     <div class="flex">
-      {isSignedIn() ? (
-        <div>
-          <Button onClick={onLogout}>Logout</Button>
-        </div>
-      ) : (
-        <div>
-          <Button onClick={onLogin}>Login</Button>
-          <pre>{message()}</pre>
-          {useOwnKeys() && <p>Using keys set in the Advanced Configuration</p>}
-          <Accordion multiple collapsible>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>Advanced Configuration</AccordionTrigger>
+      <div class="flex flex-col gap-2 w-full">
+        {isSignedIn() ? (
+          <div>
+            <Button onClick={onLogout}>Logout</Button>
+          </div>
+        ) : (
+          <div>
+            <Button onClick={onLogin}>Login</Button>
+            <pre>{message()}</pre>
+            {useOwnKeys() && (
+              <p>Using keys set in the Advanced Configuration</p>
+            )}
+            <Accordion multiple collapsible>
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Advanced Configuration</AccordionTrigger>
 
-              <AccordionContent>
-                <div class="flex flex-col gap-4 m-4"></div>
-                <p>Supplying your own keys:</p>
-                <p>{redirectUri()} needs be added Callback URL</p>
-                <div>
-                  <Input
-                    placeholder="Api Key"
-                    value={apiKey()}
-                    onChange={(e) => {
-                      const value = e.currentTarget.value;
-                      setApiKey(value);
-                    }}
-                  />
-                  <Input
-                    type="password"
-                    placeholder="Api Secret "
-                    value={apiSecret()}
-                    onChange={(e) => {
-                      const value = e.currentTarget.value;
-                      setApiSecret(value);
-                    }}
-                  />
-                </div>
-                <div class="flex flex-row gap-2">
-                  <Button onClick={onSaveKeys}>Save</Button>
-                  <Button onClick={onClearKeys} color="error">
-                    Clear
-                  </Button>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      )}
+                <AccordionContent>
+                  <div class="flex flex-col gap-4 m-4"></div>
+                  <p>Supplying your own keys:</p>
+                  <p>{redirectUri()} needs be added Callback URL</p>
+                  <div>
+                    <Input
+                      placeholder="Api Key"
+                      value={apiKey()}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        setApiKey(value);
+                      }}
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Api Secret "
+                      value={apiSecret()}
+                      onChange={(e) => {
+                        const value = e.currentTarget.value;
+                        setApiSecret(value);
+                      }}
+                    />
+                  </div>
+                  <div class="flex flex-row gap-2">
+                    <Button onClick={onSaveKeys}>Save</Button>
+                    <Button onClick={onClearKeys} color="error">
+                      Clear
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
