@@ -1,4 +1,4 @@
-import axios from "axios";
+import ky from "ky";
 import { API_KEY, TOKEN_SERVER, TOKEN_URL } from "./shared";
 import {
   INapsterResult,
@@ -12,7 +12,6 @@ import {
   MessageType,
 } from "./types";
 
-const http = axios.create();
 
 declare var Napster: any;
 let auth: NapsterAuthResponse | undefined;
@@ -30,6 +29,29 @@ const getApiKey = () => {
   const apiKey = localStorage.getItem("apiKey");
   return apiKey || API_KEY;
 };
+
+const http = ky.create({
+  hooks: {
+    beforeRequest: [
+      (request) => {
+        const authString = localStorage.getItem("auth");
+        if (authString) {
+          auth = JSON.parse(authString);
+          request.headers.set("Authorization", `Bearer ${auth?.access_token}`);
+        }
+      },
+    ],
+    afterResponse: [
+      async (request, options, response) => {
+        if (response.status === 401) {
+          const accessToken = await refreshToken();
+          request.headers.set("Authorization", `Bearer ${accessToken}`);
+          return http(request, options);
+        }
+      },
+    ],
+  },
+});
 
 const refreshToken = async () => {
   if (!auth) {
@@ -49,45 +71,17 @@ const refreshToken = async () => {
     params.append("client_secret", apiSecret);
     tokenUrl = TOKEN_URL;
   }
-  const result = await axios.post(tokenUrl, params, {
+  const result = await ky.post<NapsterAuthResponse>(tokenUrl, {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-  });
-  if (result.data.access_token && result.data.refresh_token) {
-    localStorage.setItem("auth", JSON.stringify(result.data));
-    return result.data.access_token as string;
+    body: params,
+  }).json();
+  if (result.access_token && result.refresh_token) {
+    localStorage.setItem("auth", JSON.stringify(result));
+    return result.access_token;
   }
 };
-
-http.interceptors.request.use(
-  (config) => {
-    const authString = localStorage.getItem("auth");
-    if (authString) {
-      auth = JSON.parse(authString);
-      config.headers["Authorization"] = "Bearer " + auth?.access_token;
-    }
-    return config;
-  },
-  (error) => {
-    Promise.reject(error);
-  }
-);
-
-http.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      const accessToken = await refreshToken();
-      http.defaults.headers.common["Authorization"] = "Bearer " + accessToken;
-      return http(originalRequest);
-    }
-  }
-);
 
 const path = "https://api.napster.com/v2.2";
 
@@ -320,10 +314,10 @@ async function getArtistAlbums(
     request.apiId
   }/albums/top?apikey=${getApiKey()}&limit=${limit}`;
   try {
-    const details = await axios.get<INapsterData>(detailsUrl);
-    const results = await axios.get<INapsterData>(url);
-    const albums = results.data.albums;
-    const aritistInfo = details.data.artists[0];
+    const details = await ky.get<INapsterData>(detailsUrl).json();
+    const results = await ky.get<INapsterData>(url).json();
+    const albums = results.albums;
+    const aritistInfo = details.artists[0];
     return {
       items: albumResultToAlbum(albums),
       artist: {
@@ -343,10 +337,10 @@ async function getAlbumTracks(
   const detailsUrl = `${path}/albums/${request.apiId}?apikey=${getApiKey()}`;
   const url = `${path}/albums/${request.apiId}/tracks?apikey=${getApiKey()}`;
   try {
-    const details = await axios.get<INapsterData>(detailsUrl);
-    const results = await axios.get<INapsterData>(url);
-    const tracks = results.data.tracks;
-    const albumData = details.data.albums[0];
+    const details = await ky.get<INapsterData>(detailsUrl).json();
+    const results = await ky.get<INapsterData>(url).json();
+    const tracks = results.tracks;
+    const albumData = details.albums[0];
     return {
       items: trackResultToSong(tracks),
       album: {
@@ -369,10 +363,10 @@ async function getUserPlaylists(
     return { items: [] };
   }
   const url = `${path}/me/library/playlists`;
-  const result = await http.get<NapsterPlaylistResponse>(url);
+  const result = await http.get<NapsterPlaylistResponse>(url).json();
 
   const response: SearchPlaylistResult = {
-    items: result.data.playlists.map(
+    items: result.playlists.map(
       (p): PlaylistInfo => ({
         name: p.name,
         images: p.images,
@@ -392,15 +386,15 @@ async function getPlaylistTracks(
   const url = `${path}/playlists/${
     request.apiId
   }/tracks?apikey=${getApiKey()}&limit=${limit}`;
-  const detailsResult = await http.get<NapsterPlaylistResponse>(detailsUrl);
-  const result = await http.get<INapsterData>(url);
+  const detailsResult = await http.get<NapsterPlaylistResponse>(detailsUrl).json();
+  const result = await http.get<INapsterData>(url).json();
 
   const response: PlaylistTracksResult = {
     playlist: {
-      name: detailsResult.data.playlists[0].name,
-      images: detailsResult.data.playlists[0].images,
+      name: detailsResult.playlists[0].name,
+      images: detailsResult.playlists[0].images,
     },
-    items: trackResultToSong(result.data.tracks),
+    items: trackResultToSong(result.tracks),
   };
   return response;
 }
@@ -414,11 +408,11 @@ async function searchArtists(
     request.query
   )}&type=artist&per_type_limit=${perPage}&offset=${offset}`;
   try {
-    const results = await axios.get<INapsterResult>(url);
-    const artists = results.data.search.data.artists;
+    const results = await ky.get<INapsterResult>(url).json();
+    const artists = results.search.data.artists;
     const page: PageInfo = {
       offset: offset,
-      totalResults: results.data.meta.totalCount,
+      totalResults: results.meta.totalCount,
       resultsPerPage: perPage,
     };
     const response: SearchArtistResult = {
@@ -440,11 +434,11 @@ async function searchAlbums(
     request.query
   )}&type=album&per_type_limit=${perPage}&offset=${offset}`;
   try {
-    const results = await axios.get<INapsterResult>(url);
-    const albums = results.data.search.data.albums;
+    const results = await ky.get<INapsterResult>(url).json();
+    const albums = results.search.data.albums;
     const page: PageInfo = {
       offset: offset,
-      totalResults: results.data.meta.totalCount,
+      totalResults: results.meta.totalCount,
       resultsPerPage: perPage,
     };
     const response: SearchAlbumResult = {
@@ -466,11 +460,11 @@ async function searchTracks(
     request.query
   )}&type=track&per_type_limit=${perPage}&offset=${offset}`;
   try {
-    const results = await axios.get<INapsterResult>(url);
-    const tracks = results.data.search.data.tracks;
+    const results = await ky.get<INapsterResult>(url).json();
+    const tracks = results.search.data.tracks;
     const page: PageInfo = {
       offset: offset,
-      totalResults: results.data.meta.totalCount,
+      totalResults: results.meta.totalCount,
       resultsPerPage: perPage,
     };
     const response: SearchTrackResult = {
@@ -494,9 +488,9 @@ async function searchAll(request: SearchRequest): Promise<SearchAllResult> {
 
 async function getTopItems(): Promise<SearchAllResult> {
   const url = `${path}/tracks/top`;
-  const result = await http.get<INapsterData>(url);
+  const result = await http.get<INapsterData>(url).json();
   return {
-    tracks: { items: trackResultToSong(result.data.tracks) },
+    tracks: { items: trackResultToSong(result.tracks) },
   };
 }
 

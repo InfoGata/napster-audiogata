@@ -1,4 +1,4 @@
-import axios from "axios";
+import ky from "ky";
 import { createEffect, createSignal } from "solid-js";
 import {
   Accordion,
@@ -80,13 +80,14 @@ const App = () => {
         tokenUrl = TOKEN_URL;
         params.append("client_secret", apiSecret());
       }
-      const result = await axios.post(tokenUrl, params, {
+      const result = await ky.post(tokenUrl, {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
         },
-      });
+        body: params,
+      }).json();
       setIsSignedIn(true);
-      parent.postMessage({ type: "login", auth: result.data }, "*");
+      parent.postMessage({ type: "login", auth: result }, "*");
     };
 
     window.onmessage = async (event: MessageEvent) => {

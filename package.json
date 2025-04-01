@@ -7,10 +7,10 @@
   "dependencies": {
     "@corvu/utils": "^0.1.1",
     "@kobalte/core": "^0.12.6",
-    "axios": "^1.7.5",
     "babel-preset-solid": "^1.8.16",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "ky": "^1.7.5",
     "solid-js": "^1.8.16",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7"
