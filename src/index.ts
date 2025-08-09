@@ -16,11 +16,6 @@ import {
 declare var Napster: any;
 let auth: NapsterAuthResponse | undefined;
 
-let scriptReadyResolve: any;
-let scriptReady = new Promise((resolve) => {
-  scriptReadyResolve = resolve;
-});
-
 const sendMessage = (message: MessageType) => {
   application.postUiMessage(message);
 };
@@ -164,93 +159,12 @@ class NapsterPlayer {
       document.head.appendChild(script);
     });
   }
-
-  public async loadScripts() {
-    await this.loadScript(
-      "//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"
-    );
-    await this.loadScript(
-      "https://app.napster.com/sdk/streaming-player-1.0.1.js"
-    );
-    await this.loadScript(
-      "https://cdn.jsdelivr.net/gh/Napster/napster.js@0b3beead613b52bdcec9062941f92c504919976e/napster.min.js"
-    );
-    scriptReadyResolve(undefined);
-  }
-
-  public async initalizePlayer(accessToken: string, refreshToken?: string) {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(), 5000);
-    });
-    await Promise.race([scriptReady, timeoutPromise]);
-
-    Napster.init({
-      consumerKey: getApiKey(),
-      isHTML5Compatible: true,
-    });
-    Napster.member.set({
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    });
-    Napster.player.auth();
-    if (Napster.player.streamingPlayer) {
-      Napster.player.streamingPlayer.callbackHandler("trackProgress", () => {
-        const currentTime = Napster.player.streamingPlayer.currentTime();
-        application.setTrackTime(currentTime);
-      });
-      Napster.player.streamingPlayer.callbackHandler("trackEnded", () => {
-        application.endTrack();
-      });
-    }
-  }
-
-  public async play(request: PlayTrackRequest) {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(), 5000);
-    });
-    await Promise.race([scriptReady, timeoutPromise]);
-
-    const id = request.apiId || "";
-    Napster.player.play(id, request.seekTime);
-  }
-
-  public async pause() {
-    try {
-      Napster.player.pause();
-    } catch {}
-  }
-
-  public async resume() {
-    try {
-      Napster.player.resume();
-    } catch {}
-  }
-
-  public async seek(time: number) {
-    try {
-      Napster.player.seek(time);
-    } catch {}
-  }
-
-  public async setVolume(volume: number) {
-    if (Napster && Napster.player) {
-      Napster.player.setVolume(volume);
-    }
-  }
 }
 
-const napsterPlayer = new NapsterPlayer();
-
-const loadPlayer = async () => {
+const loadAuthentication = async () => {
   if (!auth) return;
 
-  application.onPlay = napsterPlayer.play.bind(napsterPlayer);
-  application.onPause = napsterPlayer.pause.bind(napsterPlayer);
-  application.onResume = napsterPlayer.resume.bind(napsterPlayer);
-  application.onSetVolume = napsterPlayer.setVolume.bind(napsterPlayer);
-  application.onSeek = napsterPlayer.seek.bind(napsterPlayer);
   application.onGetUserPlaylists = getUserPlaylists;
-  await napsterPlayer.initalizePlayer(auth.access_token, auth.refresh_token);
 };
 
 const sendOrigin = async () => {
@@ -276,7 +190,7 @@ application.onUiMessage = async (message: UiMessageType) => {
     case "login":
       auth = message.auth;
       localStorage.setItem("auth", JSON.stringify(auth));
-      loadPlayer();
+      loadAuthentication();
       break;
     case "logout":
       localStorage.removeItem("auth");
@@ -498,6 +412,31 @@ const changeTheme = (theme: Theme) => {
   localStorage.setItem("kb-color-mode", theme);
 };
 
+async function getTrackUrl(request: GetTrackUrlRequest): Promise<string> {
+  if (!auth || !request.apiId) {
+    throw new Error("No authentication or track ID available");
+  }
+  
+  const url = `${path}/streams`;
+  try {
+    const result = await http.get(url, {
+      searchParams: {
+        track: request.apiId,
+        bitrate: 320,
+        format: 'AAC',
+        protocol: ''
+      }
+    }).json() as { streams: { url: string }[] };
+    
+    if (result.streams && result.streams.length > 0) {
+      return result.streams[0].url;
+    }
+    throw new Error("No stream URL available");
+  } catch (error) {
+    throw new Error(`Failed to get stream URL: ${error}`);
+  }
+}
+
 const init = async () => {
   application.onSearchAll = searchAll;
   application.onSearchAlbums = searchAlbums;
@@ -507,12 +446,12 @@ const init = async () => {
   application.onGetArtistAlbums = getArtistAlbums;
   application.onGetPlaylistTracks = getPlaylistTracks;
   application.onGetTopItems = getTopItems;
+  application.onGetTrackUrl = getTrackUrl;
   const authString = localStorage.getItem("auth");
   if (authString) {
     auth = JSON.parse(authString);
-    loadPlayer();
+    loadAuthentication();
   }
-  await napsterPlayer.loadScripts();
   const theme = await application.getTheme();
   changeTheme(theme);
 };
