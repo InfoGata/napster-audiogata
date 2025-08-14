@@ -245,6 +245,32 @@ async function getArtistAlbums(
   }
 }
 
+async function getArtistTopTracks(
+  request: ArtistTopTracksRequest
+): Promise<ArtistTopTracksResult> {
+  const limit = 200;
+  const detailsUrl = `${path}/artists/${request.apiId}?apikey=${getApiKey()}`;
+  const url = `${path}/artists/${
+    request.apiId
+  }/tracks/top?apikey=${getApiKey()}&limit=${limit}`;
+  try {
+    const details = await ky.get<INapsterData>(detailsUrl).json();
+    const results = await ky.get<INapsterData>(url).json();
+    const tracks = results.tracks;
+    const artistInfo = details.artists[0];
+    return {
+      items: trackResultToSong(tracks),
+      artist: {
+        name: artistInfo.name,
+        apiId: request.apiId || "",
+        images: getArtistImages(request.apiId || ""),
+      },
+    };
+  } catch {
+    return { items: [] };
+  }
+}
+
 async function getAlbumTracks(
   request: AlbumTrackRequest
 ): Promise<AlbumTracksResult> {
@@ -444,6 +470,7 @@ const init = async () => {
   application.onSearchArtists = searchArtists;
   application.onGetAlbumTracks = getAlbumTracks;
   application.onGetArtistAlbums = getArtistAlbums;
+  application.onGetArtistTopTracks = getArtistTopTracks;
   application.onGetPlaylistTracks = getPlaylistTracks;
   application.onGetTopItems = getTopItems;
   application.onGetTrackUrl = getTrackUrl;
