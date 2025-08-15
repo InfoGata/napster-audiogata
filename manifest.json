@@ -1,7 +1,7 @@
 {
   "id": "4tbwYICEMHms82I7omxPz",
   "name": "Plugin for Napster",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "script": "dist/index.js",
   "options": "dist/options.html",
   "description": "Play music from napster. Requires napster login.",

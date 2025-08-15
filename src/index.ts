@@ -248,18 +248,25 @@ async function getArtistAlbums(
 async function getArtistTopTracks(
   request: ArtistTopTracksRequest
 ): Promise<ArtistTopTracksResult> {
-  const limit = 200;
+  const limit = 10;
+  const offset = request.pageInfo?.offset || 0;
   const detailsUrl = `${path}/artists/${request.apiId}?apikey=${getApiKey()}`;
   const url = `${path}/artists/${
     request.apiId
-  }/tracks/top?apikey=${getApiKey()}&limit=${limit}`;
+  }/tracks/top?apikey=${getApiKey()}&limit=${limit}&offset=${offset}`;
   try {
     const details = await ky.get<INapsterData>(detailsUrl).json();
     const results = await ky.get<INapsterData>(url).json();
     const tracks = results.tracks;
     const artistInfo = details.artists[0];
+    const page: PageInfo = {
+      offset: offset,
+      totalResults: tracks.length,
+      resultsPerPage: limit,
+    };
     return {
       items: trackResultToSong(tracks),
+      pageInfo: page,
       artist: {
         name: artistInfo.name,
         apiId: request.apiId || "",
