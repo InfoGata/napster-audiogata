@@ -12,8 +12,6 @@ import {
   MessageType,
 } from "./types";
 
-
-declare var Napster: any;
 let auth: NapsterAuthResponse | undefined;
 
 const sendMessage = (message: MessageType) => {
@@ -261,7 +259,7 @@ async function getArtistTopTracks(
     const artistInfo = details.artists[0];
     const page: PageInfo = {
       offset: offset,
-      totalResults: tracks.length,
+      totalResults: results.meta.totalCount,
       resultsPerPage: limit,
     };
     return {

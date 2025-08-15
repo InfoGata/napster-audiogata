@@ -16,6 +16,7 @@ export interface INapsterData {
   artists: INapsterArtist[];
   albums: INapsterAlbum[];
   tracks: INapsterTrack[];
+  meta: INapsterMeta;
 }
 
 export interface INapsterArtist {
