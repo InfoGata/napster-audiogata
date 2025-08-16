@@ -39,6 +39,7 @@ This is an AudioGata plugin that provides Napster streaming integration. AudioGa
 - Token-based authentication with automatic refresh
 - Support for both default and custom API keys
 - Handles user playlists, top tracks, search across artists/albums/tracks
+- API documentation available in `napster_documentation.html`
 
 ### Build Configuration
 

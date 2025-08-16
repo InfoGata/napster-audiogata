@@ -222,21 +222,47 @@ async function getArtistAlbums(
 ): Promise<ArtistAlbumsResult> {
   const limit = 200;
   const detailsUrl = `${path}/artists/${request.apiId}?apikey=${getApiKey()}`;
-  const url = `${path}/artists/${
-    request.apiId
-  }/albums/top?apikey=${getApiKey()}&limit=${limit}`;
+  
+  // Determine the endpoint based on sortBy parameter
+  const sortBy = request.sortBy || "top";
+  let albumsEndpoint: string;
+  
+  switch (sortBy) {
+    case "release_date":
+      albumsEndpoint = `/albums`;
+      break;
+    case "new":
+      albumsEndpoint = `/albums/new`;
+      break;
+    case "top":
+    default:
+      albumsEndpoint = `/albums/top`;
+      break;
+  }
+  
+  const url = `${path}/artists/${request.apiId}${albumsEndpoint}?apikey=${getApiKey()}&limit=${limit}`;
+  
   try {
     const details = await ky.get<INapsterData>(detailsUrl).json();
     const results = await ky.get<INapsterData>(url).json();
     const albums = results.albums;
-    const aritistInfo = details.artists[0];
+    const artistInfo = details.artists[0];
+    
+    const sortOptions = [
+      { displayName: "Top Albums", value: "top" },
+      { displayName: "Release Date", value: "release_date" },
+      { displayName: "New Releases", value: "new" }
+    ];
+    
     return {
       items: albumResultToAlbum(albums),
       artist: {
-        name: aritistInfo.name,
+        name: artistInfo.name,
         apiId: request.apiId || "",
         images: getArtistImages(request.apiId || ""),
       },
+      sortOptions,
+      sortBy,
     };
   } catch {
     return { items: [] };
