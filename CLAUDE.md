@@ -11,6 +11,9 @@ This is an AudioGata plugin for Napster, built with SolidJS and Vite.
 - `npm run build:options` - Builds the options/configuration UI using vite.config.ts
 - `npm run build:plugin` - Builds the main plugin code using plugin.vite.config.ts
 
+### Testing
+- `npm test` - Run tests using Vitest with jsdom environment
+
 ### Development
 No development server commands are configured. The plugin uses a two-part build system that generates static files for distribution.
 
@@ -46,7 +49,8 @@ This is an AudioGata plugin that provides Napster streaming integration. AudioGa
 **Dual Vite Configs:**
 - `vite.config.ts` - Builds options UI with SolidJS support
 - `plugin.vite.config.ts` - Builds main plugin as single ES module
-- Both use `vite-plugin-singlefile` for standalone distribution
+- `vitest.config.ts` - Test configuration with jsdom environment and coverage reporting
+- Both build configs use `vite-plugin-singlefile` for standalone distribution
 
 ### Plugin Distribution
 - Built files output to `dist/` directory
