@@ -142,23 +142,6 @@ function trackResultToSong(results: INapsterTrack[]): Track[] {
   );
 }
 
-class NapsterPlayer {
-  private loadScript(src: string) {
-    return new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.type = "text/javascript";
-      script.src = src;
-      script.onload = () => {
-        resolve();
-      };
-      script.onerror = () => {
-        reject();
-      };
-      document.head.appendChild(script);
-    });
-  }
-}
-
 const loadAuthentication = async () => {
   if (!auth) return;
 
