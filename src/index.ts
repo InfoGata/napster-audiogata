@@ -146,6 +146,7 @@ const loadAuthentication = async () => {
   if (!auth) return;
 
   application.onGetUserPlaylists = getUserPlaylists;
+  application.onGetTopItems = getTopItems;
 };
 
 const sendOrigin = async () => {
@@ -441,10 +442,17 @@ async function searchAll(request: SearchRequest): Promise<SearchAllResult> {
 }
 
 async function getTopItems(): Promise<SearchAllResult> {
-  const url = `${path}/tracks/top`;
-  const result = await http.get<INapsterData>(url).json();
+  const tracksUrl = `${path}/me/personalized/tracks/new?limit=20`;
+  const albumsUrl = `${path}/me/personalized/albums/new?limit=20`;
+  
+  const [tracksResult, albumsResult] = await Promise.all([
+    http.get<INapsterData>(tracksUrl).json(),
+    http.get<INapsterData>(albumsUrl).json()
+  ]);
+  
   return {
-    tracks: { items: trackResultToSong(result.tracks) },
+    tracks: { items: trackResultToSong(tracksResult.tracks) },
+    albums: { items: albumResultToAlbum(albumsResult.albums) },
   };
 }
 
@@ -486,7 +494,6 @@ const init = async () => {
   application.onGetArtistAlbums = getArtistAlbums;
   application.onGetArtistTopTracks = getArtistTopTracks;
   application.onGetPlaylistTracks = getPlaylistTracks;
-  application.onGetTopItems = getTopItems;
   application.onGetTrackUrl = getTrackUrl;
   const authString = localStorage.getItem("auth");
   if (authString) {
