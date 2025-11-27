@@ -1,5 +1,5 @@
 import ky from "ky";
-import { createEffect, createSignal } from "solid-js";
+import { useState, useEffect } from "preact/hooks";
 import {
   Accordion,
   AccordionContent,
@@ -19,15 +19,15 @@ const sendUiMessage = (message: UiMessageType) => {
 };
 
 const App = () => {
-  const [isSignedIn, setIsSignedIn] = createSignal(false);
-  const [pluginId, setPluginId] = createSignal("");
-  const [redirectUri, setRedirectUri] = createSignal("");
-  const [message, setMessage] = createSignal("");
-  const [apiKey, setApiKey] = createSignal("");
-  const [apiSecret, setApiSecret] = createSignal("");
-  const [useOwnKeys, setUseOwnKeys] = createSignal(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+  const [pluginId, setPluginId] = useState("");
+  const [redirectUri, setRedirectUri] = useState("");
+  const [message, setMessage] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [useOwnKeys, setUseOwnKeys] = useState(false);
 
-  createEffect(() => {
+  useEffect(() => {
     const onMessage = (event: MessageEvent<MessageType>) => {
       switch (event.data.type) {
         case "login":
@@ -39,22 +39,19 @@ const App = () => {
           setApiKey(event.data.apiKey);
           setApiSecret(event.data.apiSecret);
           break;
-        default:
-          const _exhaustive: never = event.data;
-          break;
       }
     };
     window.addEventListener("message", onMessage);
     parent.postMessage({ type: "check-login" }, "*");
-    () => window.removeEventListener("message", onMessage);
-  });
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   const onLogin = async () => {
     const state = { pluginId: pluginId };
     const authUrl = new URL(napsterAuthUrl);
-    const clientId = useOwnKeys() ? apiKey() : API_KEY;
+    const clientId = useOwnKeys ? apiKey : API_KEY;
     authUrl.searchParams.append("client_id", clientId);
-    authUrl.searchParams.append("redirect_uri", redirectUri());
+    authUrl.searchParams.append("redirect_uri", redirectUri);
     authUrl.searchParams.append("response_type", "code");
     authUrl.searchParams.append("state", JSON.stringify(state));
     const newWindow = window.open(authUrl);
@@ -74,11 +71,11 @@ const App = () => {
       params.append("client_id", clientId);
       params.append("response_type", "code");
       params.append("grant_type", "authorization_code");
-      params.append("redirect_uri", redirectUri());
+      params.append("redirect_uri", redirectUri);
       params.append("code", returnUrl.searchParams.get("code") || "");
-      if (useOwnKeys()) {
+      if (useOwnKeys) {
         tokenUrl = TOKEN_URL;
-        params.append("client_secret", apiSecret());
+        params.append("client_secret", apiSecret);
       }
       const result = await ky.post(tokenUrl, {
         headers: {
@@ -110,8 +107,8 @@ const App = () => {
     setUseOwnKeys(!!apiKey);
     sendUiMessage({
       type: "set-keys",
-      apiSecret: apiSecret(),
-      apiKey: apiKey(),
+      apiSecret: apiSecret,
+      apiKey: apiKey,
     });
   };
 
@@ -127,49 +124,49 @@ const App = () => {
   };
 
   return (
-    <div class="flex">
-      <div class="flex flex-col gap-2 w-full">
-        {isSignedIn() ? (
+    <div className="flex">
+      <div className="flex flex-col gap-2 w-full">
+        {isSignedIn ? (
           <div>
             <Button onClick={onLogout}>Logout</Button>
           </div>
         ) : (
           <div>
             <Button onClick={onLogin}>Login</Button>
-            <pre>{message()}</pre>
-            {useOwnKeys() && (
+            <pre>{message}</pre>
+            {useOwnKeys && (
               <p>Using keys set in the Advanced Configuration</p>
             )}
-            <Accordion multiple collapsible>
+            <Accordion type="multiple">
               <AccordionItem value="item-1">
                 <AccordionTrigger>Advanced Configuration</AccordionTrigger>
 
                 <AccordionContent>
-                  <div class="flex flex-col gap-4 m-4"></div>
+                  <div className="flex flex-col gap-4 m-4"></div>
                   <p>Supplying your own keys:</p>
-                  <p>{redirectUri()} needs be added Callback URL</p>
+                  <p>{redirectUri} needs be added Callback URL</p>
                   <div>
                     <Input
                       placeholder="Api Key"
-                      value={apiKey()}
-                      onChange={(e) => {
-                        const value = e.currentTarget.value;
+                      value={apiKey}
+                      onChange={(e: any) => {
+                        const value = (e.target as HTMLInputElement).value;
                         setApiKey(value);
                       }}
                     />
                     <Input
                       type="password"
                       placeholder="Api Secret "
-                      value={apiSecret()}
-                      onChange={(e) => {
-                        const value = e.currentTarget.value;
+                      value={apiSecret}
+                      onChange={(e: any) => {
+                        const value = (e.target as HTMLInputElement).value;
                         setApiSecret(value);
                       }}
                     />
                   </div>
-                  <div class="flex flex-row gap-2">
+                  <div className="flex flex-row gap-2">
                     <Button onClick={onSaveKeys}>Save</Button>
-                    <Button onClick={onClearKeys} color="error">
+                    <Button onClick={onClearKeys} variant="destructive">
                       Clear
                     </Button>
                   </div>

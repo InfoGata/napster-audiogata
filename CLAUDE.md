@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build and Development Commands
 
-This is an AudioGata plugin for Napster, built with SolidJS and Vite.
+This is an AudioGata plugin for Napster, built with Preact, shadcn/ui, Tailwind CSS v4, and Vite.
 
 ### Build Commands
 - `npm run build` - Builds both the options page and plugin (runs build:options && build:plugin)
@@ -31,11 +31,12 @@ This is an AudioGata plugin that provides Napster streaming integration. AudioGa
 - Uses ky HTTP client for API requests with token refresh logic
 - Manages local storage for auth tokens and API keys
 
-**Options UI (`src/App.tsx` & `src/options.tsx`)**  
-- SolidJS-based configuration interface
+**Options UI (`src/App.tsx` & `src/options.tsx`)**
+- Preact-based configuration interface using shadcn/ui components
 - Handles OAuth login flow via popup window
 - Allows users to configure custom API keys
 - Built as separate HTML page loaded by AudioGata
+- Uses Tailwind CSS v4 with @tailwindcss/vite plugin
 
 **API Integration**
 - Napster API v2.2 integration for music search/streaming
@@ -47,10 +48,15 @@ This is an AudioGata plugin that provides Napster streaming integration. AudioGa
 ### Build Configuration
 
 **Dual Vite Configs:**
-- `vite.config.ts` - Builds options UI with SolidJS support
+- `vite.config.ts` - Builds options UI with Preact and Tailwind CSS v4 support
 - `plugin.vite.config.ts` - Builds main plugin as single ES module
 - `vitest.config.ts` - Test configuration with jsdom environment and coverage reporting
 - Both build configs use `vite-plugin-singlefile` for standalone distribution
+
+**UI Components:**
+- Uses shadcn/ui components adapted for Preact (via @radix-ui primitives)
+- Configuration in `components.json` for shadcn CLI compatibility
+- Theme provider from `@infogata/shadcn-vite-theme-provider`
 
 ### Plugin Distribution
 - Built files output to `dist/` directory

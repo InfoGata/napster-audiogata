@@ -457,7 +457,7 @@ async function getTopItems(): Promise<SearchAllResult> {
 }
 
 const changeTheme = (theme: Theme) => {
-  localStorage.setItem("kb-color-mode", theme);
+  localStorage.setItem("vite-ui-theme", theme);
 };
 
 async function getTrackUrl(request: GetTrackUrlRequest): Promise<string> {
